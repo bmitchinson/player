@@ -8,9 +8,10 @@
 
 	interface FolderFileListerProps {
 		onFileSelect?: (file: File, fileName: string) => void;
+		onTrackQueueUpdate?: (tracks: { file: File; fileName: string }[]) => void;
 	}
 
-	let { onFileSelect }: FolderFileListerProps = $props();
+	let { onFileSelect, onTrackQueueUpdate }: FolderFileListerProps = $props();
 
 	let fileList: FileItem[] = $state([]);
 	let isLoading = $state(false);
@@ -80,6 +81,9 @@
 			for await (const fileItem of getFilesRecursively(directoryHandle)) {
 				fileList = [...fileList, fileItem];
 			}
+
+			// Build track queue from MP3 files
+			await updateTrackQueue();
 		} catch (err: unknown) {
 			const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
 			if (err instanceof Error && err.name !== 'AbortError') {
@@ -102,42 +106,70 @@
 			error = `Failed to load file: ${errorMessage}`;
 		}
 	}
+
+	async function updateTrackQueue() {
+		if (!onTrackQueueUpdate) return;
+
+		const tracks: { file: File; fileName: string }[] = [];
+
+		try {
+			for (const item of fileList) {
+				if (!item.isDirectory && item.fileHandle) {
+					const file = await item.fileHandle.getFile();
+					const fileName = item.path.split('/').pop() || file.name;
+					tracks.push({ file, fileName });
+				}
+			}
+			onTrackQueueUpdate(tracks);
+		} catch (err: unknown) {
+			console.warn('Failed to build track queue:', err);
+		}
+	}
 </script>
 
-<div class="folder-lister">
-	<button onclick={pickFolder} disabled={isLoading} class="pick-button">
-		{isLoading ? 'Loading...' : 'Pick Folder'}
-	</button>
+<div class="w-full space-y-4">
+	<div class="text-center">
+		<button
+			onclick={pickFolder}
+			disabled={isLoading}
+			class="rounded-lg bg-blue-500 px-6 py-3 font-medium text-white hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+		>
+			{isLoading ? 'Loading...' : 'Pick Folder'}
+		</button>
+	</div>
 
 	{#if error}
-		<div class="error">
-			Error: {error}
+		<div class="rounded-lg border border-red-200 bg-red-50 p-4 text-center">
+			<p class="text-red-700">Error: {error}</p>
 		</div>
 	{/if}
 
 	{#if fileList.length > 0}
-		<div class="file-count">
+		<div class="text-center text-sm text-gray-600">
 			Found {fileList.filter((item) => !item.isDirectory).length} MP3 files and {fileList.filter(
 				(item) => item.isDirectory
 			).length} folders
 		</div>
-		<ul class="file-list">
+		<ul class="max-h-96 overflow-y-auto rounded-lg border border-gray-200 bg-white">
 			{#each fileList as item (item.path)}
 				{#if item.isDirectory}
-					<li class="file-item" style="padding-left: {item.depth * 20}px">
-						<span class="item-icon">📁</span>
-						<span class="item-name">{item.path.split('/').pop()}</span>
+					<li
+						class="flex items-center gap-2 px-3 py-1 font-mono text-sm"
+						style="padding-left: {item.depth * 20 + 12}px"
+					>
+						<span>📁</span>
+						<span class="break-all">{item.path.split('/').pop()}</span>
 					</li>
 				{:else}
-					<li class="file-item">
+					<li>
 						<button
-							class="file-button"
-							style="padding-left: {item.depth * 20}px"
+							class="flex w-full items-center gap-2 rounded px-3 py-1 text-left font-mono text-sm transition-colors hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+							style="padding-left: {item.depth * 20 + 12}px"
 							onclick={() => handleFileClick(item)}
 							type="button"
 						>
-							<span class="item-icon">🎵</span>
-							<span class="item-name">{item.path.split('/').pop()}</span>
+							<span>🎵</span>
+							<span class="break-all">{item.path.split('/').pop()}</span>
 						</button>
 					</li>
 				{/if}
@@ -145,51 +177,3 @@
 		</ul>
 	{/if}
 </div>
-
-<style>
-	.file-list {
-		max-height: 400px;
-		overflow-y: auto;
-		list-style: none;
-		padding: 0;
-	}
-
-	.file-item {
-		font-family: monospace;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 2px 0;
-	}
-
-	.file-button {
-		width: 100%;
-		background: none;
-		border: none;
-		cursor: pointer;
-		border-radius: 4px;
-		padding: 4px 2px;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		font-family: monospace;
-		text-align: left;
-	}
-
-	.file-button:hover {
-		background-color: #f0f0f0;
-	}
-
-	.file-button:focus {
-		outline: 2px solid #0066cc;
-		outline-offset: 2px;
-	}
-
-	.item-icon {
-		flex-shrink: 0;
-	}
-
-	.item-name {
-		word-break: break-all;
-	}
-</style>
