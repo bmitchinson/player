@@ -1,7 +1,7 @@
 LLM Notes:
 
 - do not run npx commands, this repo uses bun.
-- If you try to validate changes made to the sveltekit app and run `bun run dev -- --host`, the terminal will hand because that's a held process.
+- If you try to validate changes made to the sveltekit app and run `bun run dev` or `bun run preview` the terminal will hang because that's a held process. Don't run those commands, I already have the app running on 5173
 
 Strive for the following:
 
@@ -11,4 +11,4 @@ Strive for the following:
 - Modern Svelte: Use Svelte 5 syntax with `$state` runes
 - Responsive Design: Better styling that works on different screen sizes. You're free to use tailwind.
 - Browser Compatibility: Clear messaging in chat responses about browser support requirements. Not displayed on the UI.
-- Component Architecture: Reusable component that can be easily imported elsewhere
+- Component Architecture: Reusable component that can be easily imported elsewhere. Feel free to create additional components and ensure the Page.svelte files stay reasonably small.

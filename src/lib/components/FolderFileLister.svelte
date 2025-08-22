@@ -3,11 +3,19 @@
 		path: string;
 		depth: number;
 		isDirectory: boolean;
+		fileHandle?: FileSystemFileHandle;
 	}
+
+	interface FolderFileListerProps {
+		onFileSelect?: (file: File, fileName: string) => void;
+	}
+
+	let { onFileSelect }: FolderFileListerProps = $props();
 
 	let fileList: FileItem[] = $state([]);
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
+	let directoryHandle: FileSystemDirectoryHandle | null = null;
 
 	async function* getFilesRecursively(
 		dirHandle: FileSystemDirectoryHandle,
@@ -39,9 +47,17 @@
 				// Yield the directory
 				yield { path: currentPath, depth, isDirectory: true };
 				// Immediately yield its contents
-				yield* getFilesRecursively(handle, currentPath, depth + 1);
+				yield* getFilesRecursively(handle as FileSystemDirectoryHandle, currentPath, depth + 1);
 			} else if (handle.kind === 'file') {
-				yield { path: currentPath, depth, isDirectory: false };
+				// Only include MP3 files
+				if (name.toLowerCase().endsWith('.mp3')) {
+					yield {
+						path: currentPath,
+						depth,
+						isDirectory: false,
+						fileHandle: handle as FileSystemFileHandle
+					};
+				}
 			}
 		}
 	}
@@ -58,18 +74,32 @@
 			}
 
 			// Show directory picker
-			const dirHandle = await window.showDirectoryPicker();
+			directoryHandle = await window.showDirectoryPicker();
 
 			// Recursively get all files
-			for await (const fileItem of getFilesRecursively(dirHandle)) {
+			for await (const fileItem of getFilesRecursively(directoryHandle)) {
 				fileList = [...fileList, fileItem];
 			}
-		} catch (err: any) {
-			if (err.name !== 'AbortError') {
-				error = err.message;
+		} catch (err: unknown) {
+			const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+			if (err instanceof Error && err.name !== 'AbortError') {
+				error = errorMessage;
 			}
 		} finally {
 			isLoading = false;
+		}
+	}
+
+	async function handleFileClick(item: FileItem) {
+		if (item.isDirectory || !item.fileHandle) return;
+
+		try {
+			const file = await item.fileHandle.getFile();
+			const fileName = item.path.split('/').pop() || file.name;
+			onFileSelect?.(file, fileName);
+		} catch (err: unknown) {
+			const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+			error = `Failed to load file: ${errorMessage}`;
 		}
 	}
 </script>
@@ -87,16 +117,30 @@
 
 	{#if fileList.length > 0}
 		<div class="file-count">
-			Found {fileList.filter((item) => !item.isDirectory).length} files and {fileList.filter(
+			Found {fileList.filter((item) => !item.isDirectory).length} MP3 files and {fileList.filter(
 				(item) => item.isDirectory
 			).length} folders
 		</div>
 		<ul class="file-list">
 			{#each fileList as item (item.path)}
-				<li class="file-item" style="padding-left: {item.depth * 20}px">
-					<span class="item-icon">{item.isDirectory ? '📁' : '📄'}</span>
-					<span class="item-name">{item.path.split('/').pop()}</span>
-				</li>
+				{#if item.isDirectory}
+					<li class="file-item" style="padding-left: {item.depth * 20}px">
+						<span class="item-icon">📁</span>
+						<span class="item-name">{item.path.split('/').pop()}</span>
+					</li>
+				{:else}
+					<li class="file-item">
+						<button
+							class="file-button"
+							style="padding-left: {item.depth * 20}px"
+							onclick={() => handleFileClick(item)}
+							type="button"
+						>
+							<span class="item-icon">🎵</span>
+							<span class="item-name">{item.path.split('/').pop()}</span>
+						</button>
+					</li>
+				{/if}
 			{/each}
 		</ul>
 	{/if}
@@ -116,6 +160,29 @@
 		align-items: center;
 		gap: 8px;
 		padding: 2px 0;
+	}
+
+	.file-button {
+		width: 100%;
+		background: none;
+		border: none;
+		cursor: pointer;
+		border-radius: 4px;
+		padding: 4px 2px;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		font-family: monospace;
+		text-align: left;
+	}
+
+	.file-button:hover {
+		background-color: #f0f0f0;
+	}
+
+	.file-button:focus {
+		outline: 2px solid #0066cc;
+		outline-offset: 2px;
 	}
 
 	.item-icon {
