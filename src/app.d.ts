@@ -8,6 +8,33 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 	}
+
+	// File System Access API types
+	interface FileSystemHandle {
+		kind: 'file' | 'directory';
+		name: string;
+	}
+
+	interface FileSystemFileHandle extends FileSystemHandle {
+		kind: 'file';
+		getFile(): Promise<File>;
+	}
+
+	interface FileSystemDirectoryHandle extends FileSystemHandle {
+		kind: 'directory';
+		entries(): AsyncIterableIterator<[string, FileSystemHandle]>;
+		getDirectoryHandle(
+			name: string,
+			options?: { create?: boolean }
+		): Promise<FileSystemDirectoryHandle>;
+		getFileHandle(name: string, options?: { create?: boolean }): Promise<FileSystemFileHandle>;
+	}
+
+	interface Window {
+		showDirectoryPicker(): Promise<FileSystemDirectoryHandle>;
+		showOpenFilePicker(): Promise<FileSystemFileHandle[]>;
+		showSaveFilePicker(): Promise<FileSystemFileHandle>;
+	}
 }
 
 export {};
