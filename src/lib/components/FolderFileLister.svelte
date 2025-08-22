@@ -92,7 +92,7 @@
 			).length} folders
 		</div>
 		<ul class="file-list">
-			{#each fileList as item}
+			{#each fileList as item (item.path)}
 				<li class="file-item" style="padding-left: {item.depth * 20}px">
 					<span class="item-icon">{item.isDirectory ? '📁' : '📄'}</span>
 					<span class="item-name">{item.path.split('/').pop()}</span>
