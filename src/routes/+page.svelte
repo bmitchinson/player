@@ -4,6 +4,7 @@
 
 	let audioUrl = $state<string | null>(null);
 	let currentFileName = $state<string | null>(null);
+	let currentFile = $state<File | null>(null);
 	let trackQueue = $state<{ file: File; fileName: string }[]>([]);
 	let currentTrackIndex = $state<number>(-1);
 
@@ -30,6 +31,7 @@
 		// Create new URL for the selected file
 		audioUrl = URL.createObjectURL(track.file);
 		currentFileName = track.fileName;
+		currentFile = track.file;
 		currentTrackIndex = index;
 	}
 
@@ -52,6 +54,7 @@
 		// Reset state
 		audioUrl = null;
 		currentFileName = null;
+		currentFile = null;
 		currentTrackIndex = -1;
 	}
 </script>
@@ -72,6 +75,12 @@
 	</div>
 
 	<div class="w-full">
-		<AudioPlayer {audioUrl} {currentFileName} onTrackEnd={playNextTrack} onStop={handleStop} />
+		<AudioPlayer
+			{audioUrl}
+			{currentFileName}
+			{currentFile}
+			onTrackEnd={playNextTrack}
+			onStop={handleStop}
+		/>
 	</div>
 </main>
