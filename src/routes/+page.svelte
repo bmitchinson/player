@@ -57,13 +57,13 @@
 </script>
 
 <svelte:head>
-	<title>Ben Amp - MP3 Player</title>
+	<title>Local Media Player</title>
 	<meta name="description" content="A web-based MP3 player for local music files" />
 </svelte:head>
 
 <main class="w-full max-w-3xl space-y-6">
 	<div class="space-y-2 text-center">
-		<h1 class="text-3xl font-bold">Ben Amp</h1>
+		<h1 class="text-3xl font-bold">Local Media Player</h1>
 		<p class="text-gray-600">Select a folder containing MP3 files to browse and play your music.</p>
 	</div>
 
