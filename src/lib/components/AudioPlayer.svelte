@@ -18,6 +18,7 @@
 		onTrackEnd?: () => void;
 		onStop?: () => void;
 		onNext?: () => void;
+		onPrevious?: () => void;
 	}
 
 	let {
@@ -26,7 +27,8 @@
 		currentFile = null,
 		onTrackEnd,
 		onStop,
-		onNext
+		onNext,
+		onPrevious
 	}: AudioPlayerProps = $props();
 
 	let audioElement = $state<HTMLAudioElement | undefined>();
@@ -127,6 +129,13 @@
 				if (onNext) {
 					navigator.mediaSession.setActionHandler('nexttrack', () => {
 						onNext();
+					});
+				}
+
+				// Enable previous track if callback provided
+				if (onPrevious) {
+					navigator.mediaSession.setActionHandler('previoustrack', () => {
+						onPrevious();
 					});
 				}
 			}

@@ -21,13 +21,15 @@
 		onTrackQueueUpdate?: (tracks: { file: File; fileName: string }[]) => void;
 		currentFileName?: string | null;
 		getNextTrack?: () => { file: File; fileName: string } | null;
+		getPreviousTrack?: () => { file: File; fileName: string } | null;
 	}
 
 	let {
 		onFileSelect,
 		onTrackQueueUpdate,
 		currentFileName = null,
-		getNextTrack = $bindable()
+		getNextTrack = $bindable(),
+		getPreviousTrack = $bindable()
 	}: FolderFileListerProps = $props();
 
 	let fileList: FileItem[] = $state([]);
@@ -195,11 +197,15 @@
 		}
 	}
 
-	// Bindable function to get next track from table
+	// Bindable functions to get next/previous track from table
 	let getNextTrackFromTable = $state<(() => { file: File; fileName: string } | null) | undefined>();
+	let getPreviousTrackFromTable = $state<
+		(() => { file: File; fileName: string } | null) | undefined
+	>();
 
 	$effect(() => {
 		getNextTrack = () => getNextTrackFromTable?.() || null;
+		getPreviousTrack = () => getPreviousTrackFromTable?.() || null;
 	});
 </script>
 
@@ -248,6 +254,7 @@
 						onTrackSelect={handleTrackSelect}
 						{currentFileName}
 						bind:getNextTrack={getNextTrackFromTable}
+						bind:getPreviousTrack={getPreviousTrackFromTable}
 					/>
 				</div>
 			</div>

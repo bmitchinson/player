@@ -18,13 +18,15 @@
 		onTrackSelect?: (file: File, fileName: string) => void;
 		currentFileName?: string | null;
 		getNextTrack?: () => { file: File; fileName: string } | null;
+		getPreviousTrack?: () => { file: File; fileName: string } | null;
 	}
 
 	let {
 		tracks = [],
 		onTrackSelect,
 		currentFileName = null,
-		getNextTrack = $bindable()
+		getNextTrack = $bindable(),
+		getPreviousTrack = $bindable()
 	}: TrackTableProps = $props();
 
 	let trackData = $state<TrackData[]>([]);
@@ -43,6 +45,7 @@
 	// Expose sorted track sequence to parent
 	$effect(() => {
 		getNextTrack = () => getNextTrackInSequence();
+		getPreviousTrack = () => getPreviousTrackInSequence();
 	});
 
 	async function extractAllMetadata() {
@@ -143,6 +146,18 @@
 
 		const nextTrack = sortedTracks[currentIndex + 1];
 		return { file: nextTrack.file, fileName: nextTrack.fileName };
+	}
+
+	function getPreviousTrackInSequence(): { file: File; fileName: string } | null {
+		const sortedTracks = getSortedTracks();
+		const currentIndex = sortedTracks.findIndex((track) => track.fileName === currentFileName);
+
+		if (currentIndex === -1 || currentIndex === 0) {
+			return null; // No current track found or already at the beginning
+		}
+
+		const previousTrack = sortedTracks[currentIndex - 1];
+		return { file: previousTrack.file, fileName: previousTrack.fileName };
 	}
 
 	function getSortIcon(column: 'track' | 'title' | 'artist' | 'duration'): string {
