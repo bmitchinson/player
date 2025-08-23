@@ -9,7 +9,7 @@ static site web app @ player.mitchinson.dev
 - plays back music from the local filesystem.
     - ✅ here are no file uploads to any server.
     - ✅ browser apis are used to load data from filesystem.
-- shows album art
+- ✅ shows album art
 - ✅ track progress bar
 - show next up track
 - I'm realizing that [leerob vercel music app](https://github.com/leerob/next-music-player) has a lot of this already
