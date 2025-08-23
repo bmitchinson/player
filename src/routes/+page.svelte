@@ -8,6 +8,9 @@
 	let trackQueue = $state<{ file: File; fileName: string }[]>([]);
 	let currentTrackIndex = $state<number>(-1);
 
+	// Function to get next track from sorted table
+	let getNextTrack = $state<(() => { file: File; fileName: string } | null) | undefined>();
+
 	function handleFileSelect(file: File, fileName: string) {
 		// Find the index of this file in the queue
 		const trackIndex = trackQueue.findIndex((track) => track.fileName === fileName);
@@ -36,8 +39,15 @@
 	}
 
 	function playNextTrack() {
-		if (currentTrackIndex < trackQueue.length - 1) {
-			playTrack(currentTrackIndex + 1);
+		// Try to get next track from sorted table first
+		const nextTrack = getNextTrack?.();
+		if (nextTrack) {
+			handleFileSelect(nextTrack.file, nextTrack.fileName);
+		} else {
+			// Fallback to original queue-based logic if table function not available
+			if (currentTrackIndex < trackQueue.length - 1) {
+				playTrack(currentTrackIndex + 1);
+			}
 		}
 	}
 
@@ -75,6 +85,7 @@
 			onFileSelect={handleFileSelect}
 			onTrackQueueUpdate={updateTrackQueue}
 			{currentFileName}
+			bind:getNextTrack
 		/>
 	</div>
 

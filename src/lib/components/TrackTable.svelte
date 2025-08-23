@@ -6,6 +6,8 @@
 		fileName: string;
 		title?: string;
 		artist?: string;
+		album?: string;
+		track?: number;
 		duration?: number;
 		isLoading: boolean;
 		error?: string;
@@ -15,12 +17,18 @@
 		tracks: { file: File; fileName: string }[];
 		onTrackSelect?: (file: File, fileName: string) => void;
 		currentFileName?: string | null;
+		getNextTrack?: () => { file: File; fileName: string } | null;
 	}
 
-	let { tracks = [], onTrackSelect, currentFileName = null }: TrackTableProps = $props();
+	let {
+		tracks = [],
+		onTrackSelect,
+		currentFileName = null,
+		getNextTrack = $bindable()
+	}: TrackTableProps = $props();
 
 	let trackData = $state<TrackData[]>([]);
-	let sortColumn = $state<'title' | 'artist' | 'duration'>('title');
+	let sortColumn = $state<'track' | 'title' | 'artist' | 'duration'>('track');
 	let sortDirection = $state<'asc' | 'desc'>('asc');
 
 	// Extract metadata when tracks change
@@ -30,6 +38,11 @@
 		} else {
 			trackData = [];
 		}
+	});
+
+	// Expose sorted track sequence to parent
+	$effect(() => {
+		getNextTrack = () => getNextTrackInSequence();
 	});
 
 	async function extractAllMetadata() {
@@ -48,6 +61,8 @@
 					...trackData[i],
 					title: metadata.common.title || tracks[i].fileName.replace('.mp3', ''),
 					artist: metadata.common.artist,
+					album: metadata.common.album,
+					track: metadata.common.track?.no || undefined,
 					duration: metadata.format.duration,
 					isLoading: false
 				};
@@ -62,7 +77,7 @@
 		}
 	}
 
-	function handleSort(column: 'title' | 'artist' | 'duration') {
+	function handleSort(column: 'track' | 'title' | 'artist' | 'duration') {
 		if (sortColumn === column) {
 			sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
 		} else {
@@ -84,6 +99,10 @@
 			let bValue: string | number | undefined;
 
 			switch (sortColumn) {
+				case 'track':
+					aValue = a.track || 999;
+					bValue = b.track || 999;
+					break;
 				case 'title':
 					aValue = a.title?.toLowerCase() || '';
 					bValue = b.title?.toLowerCase() || '';
@@ -114,7 +133,19 @@
 		onTrackSelect?.(track.file, track.fileName);
 	}
 
-	function getSortIcon(column: 'title' | 'artist' | 'duration'): string {
+	function getNextTrackInSequence(): { file: File; fileName: string } | null {
+		const sortedTracks = getSortedTracks();
+		const currentIndex = sortedTracks.findIndex((track) => track.fileName === currentFileName);
+
+		if (currentIndex === -1 || currentIndex === sortedTracks.length - 1) {
+			return null; // No current track found or already at the end
+		}
+
+		const nextTrack = sortedTracks[currentIndex + 1];
+		return { file: nextTrack.file, fileName: nextTrack.fileName };
+	}
+
+	function getSortIcon(column: 'track' | 'title' | 'artist' | 'duration'): string {
 		if (sortColumn !== column) return '↕️';
 		return sortDirection === 'asc' ? '↑' : '↓';
 	}
@@ -130,6 +161,17 @@
 			<table class="w-full bg-white">
 				<thead class="border-b border-gray-200 bg-gray-50">
 					<tr>
+						<th class="w-16 px-2 py-3 text-center sm:px-4">
+							<button
+								class="flex items-center gap-1 text-xs font-medium text-gray-700 hover:text-gray-900 focus:outline-none sm:gap-2 sm:text-sm"
+								onclick={() => handleSort('track')}
+								type="button"
+							>
+								<span class="hidden sm:inline">#</span>
+								<span class="sm:hidden">#</span>
+								{getSortIcon('track')}
+							</button>
+						</th>
 						<th class="px-2 py-3 text-left sm:px-4">
 							<button
 								class="flex items-center gap-1 text-xs font-medium text-gray-700 hover:text-gray-900 focus:outline-none sm:gap-2 sm:text-sm"
@@ -172,6 +214,17 @@
 								: ''}"
 							onclick={() => handleTrackClick(track)}
 						>
+							<td class="w-16 px-2 py-3 text-center sm:px-4">
+								{#if track.isLoading}
+									<div class="animate-pulse">
+										<div class="mx-auto h-4 w-8 rounded bg-gray-300"></div>
+									</div>
+								{:else}
+									<div class="font-mono text-xs font-medium text-gray-600 sm:text-sm">
+										{track.track || '—'}
+									</div>
+								{/if}
+							</td>
 							<td class="px-2 py-3 sm:px-4">
 								{#if track.isLoading}
 									<div class="flex items-center gap-2">

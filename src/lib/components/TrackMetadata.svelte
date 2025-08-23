@@ -3,6 +3,7 @@
 		title?: string;
 		album?: string;
 		artist?: string;
+		track?: number;
 		duration?: number;
 	}
 
@@ -49,19 +50,20 @@
 					<dd class="text-lg font-semibold break-words text-gray-900">{getDisplayTitle()}</dd>
 				</div>
 
-				{#if metadata?.artist}
-					<div>
-						<dt class="text-xs font-medium tracking-wide text-gray-500 uppercase">Artist</dt>
-						<dd class="text-base break-words text-gray-800">{metadata.artist}</dd>
-					</div>
-				{/if}
+				<div>
+					<dt class="text-xs font-medium tracking-wide text-gray-500 uppercase">Artist</dt>
+					<dd class="text-base break-words text-gray-800">{metadata?.artist || '—'}</dd>
+				</div>
 
-				{#if metadata?.album}
-					<div>
-						<dt class="text-xs font-medium tracking-wide text-gray-500 uppercase">Album</dt>
-						<dd class="text-base break-words text-gray-700">{metadata.album}</dd>
-					</div>
-				{/if}
+				<div>
+					<dt class="text-xs font-medium tracking-wide text-gray-500 uppercase">Album</dt>
+					<dd class="text-base break-words text-gray-700">{metadata?.album || '—'}</dd>
+				</div>
+
+				<div>
+					<dt class="text-xs font-medium tracking-wide text-gray-500 uppercase">Track</dt>
+					<dd class="text-base break-words text-gray-700">{metadata?.track || '—'}</dd>
+				</div>
 
 				<div class="flex items-center justify-between border-t border-gray-100 pt-2">
 					<div>

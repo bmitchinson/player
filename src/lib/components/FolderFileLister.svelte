@@ -20,12 +20,14 @@
 		onFileSelect?: (file: File, fileName: string) => void;
 		onTrackQueueUpdate?: (tracks: { file: File; fileName: string }[]) => void;
 		currentFileName?: string | null;
+		getNextTrack?: () => { file: File; fileName: string } | null;
 	}
 
 	let {
 		onFileSelect,
 		onTrackQueueUpdate,
-		currentFileName = null
+		currentFileName = null,
+		getNextTrack = $bindable()
 	}: FolderFileListerProps = $props();
 
 	let fileList: FileItem[] = $state([]);
@@ -192,6 +194,13 @@
 			console.warn('Failed to build track queue:', err);
 		}
 	}
+
+	// Bindable function to get next track from table
+	let getNextTrackFromTable = $state<(() => { file: File; fileName: string } | null) | undefined>();
+
+	$effect(() => {
+		getNextTrack = () => getNextTrackFromTable?.() || null;
+	});
 </script>
 
 <div class="w-full space-y-4">
@@ -234,7 +243,12 @@
 					</div>
 				{/if}
 				<div class="h-64 overflow-auto lg:h-[32rem]">
-					<TrackTable {tracks} onTrackSelect={handleTrackSelect} {currentFileName} />
+					<TrackTable
+						{tracks}
+						onTrackSelect={handleTrackSelect}
+						{currentFileName}
+						bind:getNextTrack={getNextTrackFromTable}
+					/>
 				</div>
 			</div>
 		</div>

@@ -6,6 +6,7 @@
 		title?: string;
 		album?: string;
 		artist?: string;
+		track?: number;
 		duration?: number;
 	}
 
@@ -59,6 +60,7 @@
 				title: audioMetadata.common.title,
 				album: audioMetadata.common.album,
 				artist: audioMetadata.common.artist,
+				track: audioMetadata.common.track?.no || undefined,
 				duration: audioMetadata.format.duration
 			};
 		} catch (error) {
