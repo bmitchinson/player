@@ -41,6 +41,10 @@
 				URL.revokeObjectURL(metadata.artwork);
 			}
 			metadata = null;
+			// Clear MediaSession metadata
+			if ('mediaSession' in navigator) {
+				navigator.mediaSession.metadata = null;
+			}
 		}
 	});
 
@@ -68,10 +72,12 @@
 
 			// Extract artwork if available
 			let artworkUrl: string | undefined;
+			let artworkMimeType: string | undefined;
 			if (audioMetadata.common.picture && audioMetadata.common.picture.length > 0) {
 				const picture = audioMetadata.common.picture[0];
 				const blob = new Blob([new Uint8Array(picture.data)], { type: picture.format });
 				artworkUrl = URL.createObjectURL(blob);
+				artworkMimeType = picture.format;
 			}
 
 			metadata = {
@@ -82,9 +88,46 @@
 				duration: audioMetadata.format.duration,
 				artwork: artworkUrl
 			};
+
+			// Set MediaSession metadata if supported
+			if ('mediaSession' in navigator) {
+				const mediaMetadata: any = {
+					title: metadata.title || currentFileName || 'Unknown Track',
+					artist: metadata.artist || '',
+					album: metadata.album || ''
+				};
+
+				// Add artwork if available
+				if (artworkUrl && artworkMimeType) {
+					mediaMetadata.artwork = [
+						{
+							src: artworkUrl,
+							type: artworkMimeType,
+							sizes: '512x512'
+						}
+					];
+				}
+
+				navigator.mediaSession.metadata = new MediaMetadata(mediaMetadata);
+
+				// Set up action handlers
+				navigator.mediaSession.setActionHandler('play', () => {
+					audioElement?.play();
+				});
+				navigator.mediaSession.setActionHandler('pause', () => {
+					audioElement?.pause();
+				});
+				navigator.mediaSession.setActionHandler('stop', () => {
+					handleStop();
+				});
+			}
 		} catch (error) {
 			console.warn('Failed to extract metadata:', error);
 			metadata = null;
+			// Clear MediaSession metadata on error
+			if ('mediaSession' in navigator) {
+				navigator.mediaSession.metadata = null;
+			}
 		} finally {
 			isLoadingMetadata = false;
 		}
@@ -102,6 +145,10 @@
 		// Clean up artwork URL when stopping
 		if (metadata?.artwork) {
 			URL.revokeObjectURL(metadata.artwork);
+		}
+		// Clear MediaSession metadata when stopped
+		if ('mediaSession' in navigator) {
+			navigator.mediaSession.metadata = null;
 		}
 		onStop?.();
 	}
