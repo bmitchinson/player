@@ -1,4 +1,6 @@
 <script lang="ts">
+	import TrackTable from './TrackTable.svelte';
+
 	interface FileItem {
 		path: string;
 		depth: number;
@@ -9,14 +11,20 @@
 	interface FolderFileListerProps {
 		onFileSelect?: (file: File, fileName: string) => void;
 		onTrackQueueUpdate?: (tracks: { file: File; fileName: string }[]) => void;
+		currentFileName?: string | null;
 	}
 
-	let { onFileSelect, onTrackQueueUpdate }: FolderFileListerProps = $props();
+	let {
+		onFileSelect,
+		onTrackQueueUpdate,
+		currentFileName = null
+	}: FolderFileListerProps = $props();
 
 	let fileList: FileItem[] = $state([]);
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 	let directoryHandle: FileSystemDirectoryHandle | null = null;
+	let tracks: { file: File; fileName: string }[] = $state([]);
 
 	async function* getFilesRecursively(
 		dirHandle: FileSystemDirectoryHandle,
@@ -82,7 +90,7 @@
 				fileList = [...fileList, fileItem];
 			}
 
-			// Build track queue from MP3 files
+			// Build track queue and tracks list from MP3 files
 			await updateTrackQueue();
 		} catch (err: unknown) {
 			const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
@@ -94,33 +102,23 @@
 		}
 	}
 
-	async function handleFileClick(item: FileItem) {
-		if (item.isDirectory || !item.fileHandle) return;
-
-		try {
-			const file = await item.fileHandle.getFile();
-			const fileName = item.path.split('/').pop() || file.name;
-			onFileSelect?.(file, fileName);
-		} catch (err: unknown) {
-			const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-			error = `Failed to load file: ${errorMessage}`;
-		}
+	function handleTrackSelect(file: File, fileName: string) {
+		onFileSelect?.(file, fileName);
 	}
 
 	async function updateTrackQueue() {
-		if (!onTrackQueueUpdate) return;
-
-		const tracks: { file: File; fileName: string }[] = [];
+		const trackList: { file: File; fileName: string }[] = [];
 
 		try {
 			for (const item of fileList) {
 				if (!item.isDirectory && item.fileHandle) {
 					const file = await item.fileHandle.getFile();
 					const fileName = item.path.split('/').pop() || file.name;
-					tracks.push({ file, fileName });
+					trackList.push({ file, fileName });
 				}
 			}
-			onTrackQueueUpdate(tracks);
+			tracks = trackList;
+			onTrackQueueUpdate?.(trackList);
 		} catch (err: unknown) {
 			console.warn('Failed to build track queue:', err);
 		}
@@ -145,35 +143,12 @@
 	{/if}
 
 	{#if fileList.length > 0}
-		<div class="text-center text-sm text-gray-600">
-			Found {fileList.filter((item) => !item.isDirectory).length} MP3 files and {fileList.filter(
+		<div class="mb-4 text-center text-sm text-gray-600">
+			Found {fileList.filter((item) => !item.isDirectory).length} MP3 files in {fileList.filter(
 				(item) => item.isDirectory
 			).length} folders
 		</div>
-		<ul class="max-h-96 overflow-y-auto rounded-lg border border-gray-200 bg-white">
-			{#each fileList as item (item.path)}
-				{#if item.isDirectory}
-					<li
-						class="flex items-center gap-2 px-3 py-1 font-mono text-sm"
-						style="padding-left: {item.depth * 20 + 12}px"
-					>
-						<span>📁</span>
-						<span class="break-all">{item.path.split('/').pop()}</span>
-					</li>
-				{:else}
-					<li>
-						<button
-							class="flex w-full items-center gap-2 rounded px-3 py-1 text-left font-mono text-sm transition-colors hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-							style="padding-left: {item.depth * 20 + 12}px"
-							onclick={() => handleFileClick(item)}
-							type="button"
-						>
-							<span>🎵</span>
-							<span class="break-all">{item.path.split('/').pop()}</span>
-						</button>
-					</li>
-				{/if}
-			{/each}
-		</ul>
+
+		<TrackTable {tracks} onTrackSelect={handleTrackSelect} {currentFileName} />
 	{/if}
 </div>

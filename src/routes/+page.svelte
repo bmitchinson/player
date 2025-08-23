@@ -71,7 +71,11 @@
 	</div>
 
 	<div class="w-full">
-		<FolderFileLister onFileSelect={handleFileSelect} onTrackQueueUpdate={updateTrackQueue} />
+		<FolderFileLister
+			onFileSelect={handleFileSelect}
+			onTrackQueueUpdate={updateTrackQueue}
+			{currentFileName}
+		/>
 	</div>
 
 	<div class="w-full">
