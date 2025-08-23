@@ -1,11 +1,19 @@
 <script lang="ts">
 	import TrackTable from './TrackTable.svelte';
+	import FolderSidebar from './FolderSidebar.svelte';
 
 	interface FileItem {
 		path: string;
 		depth: number;
 		isDirectory: boolean;
 		fileHandle?: FileSystemFileHandle;
+	}
+
+	interface FolderItem {
+		path: string;
+		name: string;
+		depth: number;
+		isSelected: boolean;
 	}
 
 	interface FolderFileListerProps {
@@ -21,10 +29,12 @@
 	}: FolderFileListerProps = $props();
 
 	let fileList: FileItem[] = $state([]);
+	let folderList: FolderItem[] = $state([]);
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 	let directoryHandle: FileSystemDirectoryHandle | null = null;
 	let tracks: { file: File; fileName: string }[] = $state([]);
+	let selectedFolder = $state<string | null>(null);
 
 	async function* getFilesRecursively(
 		dirHandle: FileSystemDirectoryHandle,
@@ -90,8 +100,14 @@
 				fileList = [...fileList, fileItem];
 			}
 
-			// Build track queue and tracks list from MP3 files
-			await updateTrackQueue();
+			// Extract folders from file list
+			extractFolders();
+
+			// Select root folder by default if available
+			if (folderList.length > 0) {
+				selectedFolder = folderList[0].path;
+				await updateTrackQueueForFolder(selectedFolder);
+			}
 		} catch (err: unknown) {
 			const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
 			if (err instanceof Error && err.name !== 'AbortError') {
@@ -106,15 +122,68 @@
 		onFileSelect?.(file, fileName);
 	}
 
-	async function updateTrackQueue() {
+	function extractFolders() {
+		const seenPaths: string[] = [];
+		const folders: FolderItem[] = [];
+
+		// Add root folder
+		if (directoryHandle) {
+			folders.push({
+				path: '',
+				name: directoryHandle.name,
+				depth: 0,
+				isSelected: false
+			});
+			seenPaths.push('');
+		}
+
+		// Extract unique folders from file paths
+		for (const item of fileList) {
+			if (item.isDirectory) {
+				const pathParts = item.path.split('/');
+				for (let i = 1; i <= pathParts.length; i++) {
+					const folderPath = pathParts.slice(0, i).join('/');
+					if (!seenPaths.includes(folderPath)) {
+						seenPaths.push(folderPath);
+						folders.push({
+							path: folderPath,
+							name: pathParts[i - 1],
+							depth: i,
+							isSelected: false
+						});
+					}
+				}
+			}
+		}
+
+		folderList = folders.sort((a, b) => {
+			if (a.depth !== b.depth) return a.depth - b.depth;
+			return a.path.localeCompare(b.path);
+		});
+	}
+
+	async function handleFolderSelect(folderPath: string) {
+		selectedFolder = folderPath;
+		await updateTrackQueueForFolder(folderPath);
+	}
+
+	async function updateTrackQueueForFolder(folderPath: string) {
 		const trackList: { file: File; fileName: string }[] = [];
 
 		try {
 			for (const item of fileList) {
 				if (!item.isDirectory && item.fileHandle) {
-					const file = await item.fileHandle.getFile();
-					const fileName = item.path.split('/').pop() || file.name;
-					trackList.push({ file, fileName });
+					// Check if this file is in the selected folder
+					const itemFolder = item.path.substring(0, item.path.lastIndexOf('/'));
+					if (
+						folderPath === '' ||
+						itemFolder === folderPath ||
+						itemFolder.startsWith(folderPath + '/')
+					) {
+						const file = await item.fileHandle.getFile();
+						const fileName = item.path.split('/').pop() || file.name;
+						trackList.push({ file, fileName });
+					}
 				}
 			}
 			tracks = trackList;
@@ -143,12 +212,31 @@
 	{/if}
 
 	{#if fileList.length > 0}
-		<div class="mb-4 text-center text-sm text-gray-600">
-			Found {fileList.filter((item) => !item.isDirectory).length} MP3 files in {fileList.filter(
-				(item) => item.isDirectory
-			).length} folders
-		</div>
+		<div class="flex flex-col gap-4 lg:flex-row">
+			<!-- Folder Sidebar -->
+			<div class="w-full lg:w-64 lg:flex-shrink-0">
+				<div class="h-64 lg:h-[32rem]">
+					<FolderSidebar
+						folders={folderList}
+						{selectedFolder}
+						onFolderSelect={handleFolderSelect}
+					/>
+				</div>
+			</div>
 
-		<TrackTable {tracks} onTrackSelect={handleTrackSelect} {currentFileName} />
+			<!-- Track Table -->
+			<div class="min-w-0 flex-1">
+				{#if selectedFolder !== null}
+					<div class="mb-4 text-center text-sm text-gray-600">
+						{tracks.length} tracks in {selectedFolder === ''
+							? 'Root'
+							: selectedFolder.split('/').pop()}
+					</div>
+				{/if}
+				<div class="h-64 overflow-auto lg:h-[32rem]">
+					<TrackTable {tracks} onTrackSelect={handleTrackSelect} {currentFileName} />
+				</div>
+			</div>
+		</div>
 	{/if}
 </div>

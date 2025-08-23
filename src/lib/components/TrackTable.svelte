@@ -120,13 +120,13 @@
 	}
 </script>
 
-<div class="w-full">
+<div class="flex h-full w-full flex-col">
 	{#if trackData.length === 0}
-		<div class="py-8 text-center">
+		<div class="flex flex-1 items-center justify-center">
 			<p class="text-gray-500">No tracks loaded. Select a folder to see tracks.</p>
 		</div>
 	{:else}
-		<div class="overflow-x-auto rounded-lg border border-gray-200">
+		<div class="flex-1 overflow-auto rounded-lg border border-gray-200">
 			<table class="w-full bg-white">
 				<thead class="border-b border-gray-200 bg-gray-50">
 					<tr>
@@ -227,7 +227,7 @@
 			</table>
 		</div>
 
-		<div class="mt-4 flex items-center justify-between text-sm text-gray-600">
+		<div class="mt-2 flex flex-shrink-0 items-center justify-between text-xs text-gray-600">
 			<div>
 				{trackData.filter((track) => !track.isLoading).length} of {trackData.length} tracks loaded
 			</div>
