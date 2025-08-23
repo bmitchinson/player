@@ -17,6 +17,7 @@
 		currentFile?: File | null;
 		onTrackEnd?: () => void;
 		onStop?: () => void;
+		onNext?: () => void;
 	}
 
 	let {
@@ -24,7 +25,8 @@
 		currentFileName = null,
 		currentFile = null,
 		onTrackEnd,
-		onStop
+		onStop,
+		onNext
 	}: AudioPlayerProps = $props();
 
 	let audioElement = $state<HTMLAudioElement | undefined>();
@@ -120,6 +122,13 @@
 				navigator.mediaSession.setActionHandler('stop', () => {
 					handleStop();
 				});
+
+				// Enable next track if callback provided
+				if (onNext) {
+					navigator.mediaSession.setActionHandler('nexttrack', () => {
+						onNext();
+					});
+				}
 			}
 		} catch (error) {
 			console.warn('Failed to extract metadata:', error);

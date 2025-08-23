@@ -96,6 +96,7 @@
 			{currentFile}
 			onTrackEnd={playNextTrack}
 			onStop={handleStop}
+			onNext={playNextTrack}
 		/>
 	</div>
 </main>
