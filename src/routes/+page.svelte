@@ -76,8 +76,8 @@
 
 <main class="w-full max-w-3xl space-y-6">
 	<div class="space-y-2 text-center">
-		<h1 class="text-3xl font-bold">Local Media Player</h1>
-		<p class="text-gray-600">Select a folder containing MP3 files to browse and play your music.</p>
+		<h1 class="text-3xl font-bold text-white">Local Media Player</h1>
+		<p class="text-gray-400">Select a folder containing MP3 files to browse and play your music.</p>
 	</div>
 
 	<div class="w-full">

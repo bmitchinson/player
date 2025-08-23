@@ -154,16 +154,16 @@
 <div class="flex h-full w-full flex-col">
 	{#if trackData.length === 0}
 		<div class="flex flex-1 items-center justify-center">
-			<p class="text-gray-500">No tracks loaded. Select a folder to see tracks.</p>
+			<p class="text-gray-400">No tracks loaded. Select a folder to see tracks.</p>
 		</div>
 	{:else}
-		<div class="flex-1 overflow-auto rounded-lg border border-gray-200">
-			<table class="w-full bg-white">
-				<thead class="border-b border-gray-200 bg-gray-50">
+		<div class="flex-1 overflow-auto rounded-lg border border-gray-700">
+			<table class="w-full bg-gray-800">
+				<thead class="border-b border-gray-700 bg-gray-900">
 					<tr>
 						<th class="w-16 px-2 py-3 text-center sm:px-4">
 							<button
-								class="flex items-center gap-1 text-xs font-medium text-gray-700 hover:text-gray-900 focus:outline-none sm:gap-2 sm:text-sm"
+								class="flex items-center gap-1 text-xs font-medium text-gray-300 hover:text-gray-100 focus:outline-none sm:gap-2 sm:text-sm"
 								onclick={() => handleSort('track')}
 								type="button"
 							>
@@ -174,7 +174,7 @@
 						</th>
 						<th class="px-2 py-3 text-left sm:px-4">
 							<button
-								class="flex items-center gap-1 text-xs font-medium text-gray-700 hover:text-gray-900 focus:outline-none sm:gap-2 sm:text-sm"
+								class="flex items-center gap-1 text-xs font-medium text-gray-300 hover:text-gray-100 focus:outline-none sm:gap-2 sm:text-sm"
 								onclick={() => handleSort('title')}
 								type="button"
 							>
@@ -185,7 +185,7 @@
 						</th>
 						<th class="hidden px-2 py-3 text-left sm:table-cell sm:px-4">
 							<button
-								class="flex items-center gap-1 text-xs font-medium text-gray-700 hover:text-gray-900 focus:outline-none sm:gap-2 sm:text-sm"
+								class="flex items-center gap-1 text-xs font-medium text-gray-300 hover:text-gray-100 focus:outline-none sm:gap-2 sm:text-sm"
 								onclick={() => handleSort('artist')}
 								type="button"
 							>
@@ -194,7 +194,7 @@
 						</th>
 						<th class="px-2 py-3 text-left sm:px-4">
 							<button
-								class="flex items-center gap-1 text-xs font-medium text-gray-700 hover:text-gray-900 focus:outline-none sm:gap-2 sm:text-sm"
+								class="flex items-center gap-1 text-xs font-medium text-gray-300 hover:text-gray-100 focus:outline-none sm:gap-2 sm:text-sm"
 								onclick={() => handleSort('duration')}
 								type="button"
 							>
@@ -205,22 +205,22 @@
 						</th>
 					</tr>
 				</thead>
-				<tbody class="divide-y divide-gray-200">
+				<tbody class="divide-y divide-gray-700">
 					{#each getSortedTracks() as track (track.fileName)}
 						<tr
-							class="cursor-pointer transition-colors hover:bg-gray-50 {currentFileName ===
+							class="cursor-pointer transition-colors hover:bg-gray-700 {currentFileName ===
 							track.fileName
-								? 'border-l-4 border-blue-400 bg-blue-50'
+								? 'border-l-4 border-blue-400 bg-blue-900/30'
 								: ''}"
 							onclick={() => handleTrackClick(track)}
 						>
 							<td class="w-16 px-2 py-3 text-center sm:px-4">
 								{#if track.isLoading}
 									<div class="animate-pulse">
-										<div class="mx-auto h-4 w-8 rounded bg-gray-300"></div>
+										<div class="mx-auto h-4 w-8 rounded bg-gray-600"></div>
 									</div>
 								{:else}
-									<div class="font-mono text-xs font-medium text-gray-600 sm:text-sm">
+									<div class="font-mono text-xs font-medium text-gray-400 sm:text-sm">
 										{track.track || '—'}
 									</div>
 								{/if}
@@ -232,33 +232,33 @@
 											class="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent sm:h-4 sm:w-4"
 										></div>
 										<div class="animate-pulse">
-											<div class="h-4 w-24 rounded bg-gray-300 sm:w-32"></div>
+											<div class="h-4 w-24 rounded bg-gray-600 sm:w-32"></div>
 										</div>
 									</div>
 								{:else}
-									<div class="font-medium break-words text-gray-900">
+									<div class="font-medium break-words text-gray-100">
 										<div class="text-sm sm:text-base">
 											{track.title || track.fileName.replace('.mp3', '')}
 										</div>
-										<div class="text-xs text-gray-500 sm:hidden">
+										<div class="text-xs text-gray-400 sm:hidden">
 											{track.artist || '—'}
 										</div>
 										{#if currentFileName === track.fileName}
-											<span class="ml-2 text-xs text-blue-500">♪ Playing</span>
+											<span class="ml-2 text-xs text-blue-400">♪ Playing</span>
 										{/if}
 									</div>
 									{#if track.error}
-										<div class="mt-1 text-xs text-red-500">{track.error}</div>
+										<div class="mt-1 text-xs text-red-400">{track.error}</div>
 									{/if}
 								{/if}
 							</td>
 							<td class="hidden px-2 py-3 sm:table-cell sm:px-4">
 								{#if track.isLoading}
 									<div class="animate-pulse">
-										<div class="h-4 w-20 rounded bg-gray-300"></div>
+										<div class="h-4 w-20 rounded bg-gray-600"></div>
 									</div>
 								{:else}
-									<div class="break-words text-gray-700">
+									<div class="break-words text-gray-300">
 										{track.artist || '—'}
 									</div>
 								{/if}
@@ -266,10 +266,10 @@
 							<td class="px-2 py-3 sm:px-4">
 								{#if track.isLoading}
 									<div class="animate-pulse">
-										<div class="h-4 w-12 rounded bg-gray-300"></div>
+										<div class="h-4 w-12 rounded bg-gray-600"></div>
 									</div>
 								{:else}
-									<div class="font-mono text-xs text-gray-600 sm:text-sm">
+									<div class="font-mono text-xs text-gray-400 sm:text-sm">
 										{formatDuration(track.duration)}
 									</div>
 								{/if}
@@ -280,7 +280,7 @@
 			</table>
 		</div>
 
-		<div class="mt-2 flex flex-shrink-0 items-center justify-between text-xs text-gray-600">
+		<div class="mt-2 flex flex-shrink-0 items-center justify-between text-xs text-gray-400">
 			<div>
 				{trackData.filter((track) => !track.isLoading).length} of {trackData.length} tracks loaded
 			</div>

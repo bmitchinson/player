@@ -8,6 +8,7 @@
 		artist?: string;
 		track?: number;
 		duration?: number;
+		artwork?: string;
 	}
 
 	interface AudioPlayerProps {
@@ -35,6 +36,10 @@
 		if (currentFile) {
 			extractMetadata(currentFile);
 		} else {
+			// Clean up previous artwork URL if it exists
+			if (metadata?.artwork) {
+				URL.revokeObjectURL(metadata.artwork);
+			}
 			metadata = null;
 		}
 	});
@@ -56,12 +61,26 @@
 		try {
 			const audioMetadata = await parseBlob(file);
 
+			// Clean up previous artwork URL if it exists
+			if (metadata?.artwork) {
+				URL.revokeObjectURL(metadata.artwork);
+			}
+
+			// Extract artwork if available
+			let artworkUrl: string | undefined;
+			if (audioMetadata.common.picture && audioMetadata.common.picture.length > 0) {
+				const picture = audioMetadata.common.picture[0];
+				const blob = new Blob([new Uint8Array(picture.data)], { type: picture.format });
+				artworkUrl = URL.createObjectURL(blob);
+			}
+
 			metadata = {
 				title: audioMetadata.common.title,
 				album: audioMetadata.common.album,
 				artist: audioMetadata.common.artist,
 				track: audioMetadata.common.track?.no || undefined,
-				duration: audioMetadata.format.duration
+				duration: audioMetadata.format.duration,
+				artwork: artworkUrl
 			};
 		} catch (error) {
 			console.warn('Failed to extract metadata:', error);
@@ -80,6 +99,10 @@
 			audioElement.pause();
 			audioElement.currentTime = 0;
 		}
+		// Clean up artwork URL when stopping
+		if (metadata?.artwork) {
+			URL.revokeObjectURL(metadata.artwork);
+		}
 		onStop?.();
 	}
 </script>
@@ -89,7 +112,7 @@
 	<TrackMetadata {metadata} fileName={currentFileName} isLoading={isLoadingMetadata} />
 
 	<!-- Audio Player -->
-	<div class="w-full rounded-lg border border-gray-300 bg-gray-50 p-6">
+	<div class="w-full rounded-lg border border-gray-700 bg-gray-800 p-6">
 		{#if audioUrl && currentFileName}
 			<div class="flex items-center gap-4">
 				<audio
@@ -105,7 +128,7 @@
 
 				<button
 					onclick={handleStop}
-					class="rounded bg-red-500 px-4 py-2 text-white hover:bg-red-600 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:outline-none"
+					class="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800 focus:outline-none"
 					type="button"
 				>
 					Stop
@@ -113,7 +136,7 @@
 			</div>
 		{:else}
 			<div class="py-4 text-center">
-				<p class="text-sm text-gray-500 italic">
+				<p class="text-sm text-gray-400 italic">
 					No track selected. Click on an MP3 file from the list above to start playing.
 				</p>
 			</div>
