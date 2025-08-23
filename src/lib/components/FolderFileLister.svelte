@@ -214,15 +214,15 @@
 		<button
 			onclick={pickFolder}
 			disabled={isLoading}
-			class="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-gray-900 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+			class="rounded-lg px-6 py-3 disabled:cursor-not-allowed disabled:opacity-50"
 		>
 			{isLoading ? 'Loading...' : 'Pick Folder'}
 		</button>
 	</div>
 
 	{#if error}
-		<div class="rounded-lg border border-red-600 bg-red-900/20 p-4 text-center">
-			<p class="text-red-400">Error: {error}</p>
+		<div class="rounded-lg border p-4 text-center">
+			<p>Error: {error}</p>
 		</div>
 	{/if}
 
@@ -241,13 +241,6 @@
 
 			<!-- Track Table -->
 			<div class="min-w-0 flex-1">
-				{#if selectedFolder !== null}
-					<div class="mb-4 text-center text-sm text-gray-400">
-						{tracks.length} tracks in {selectedFolder === ''
-							? 'Root'
-							: selectedFolder.split('/').pop()}
-					</div>
-				{/if}
 				<div class="h-64 overflow-auto lg:h-[32rem]">
 					<TrackTable
 						{tracks}

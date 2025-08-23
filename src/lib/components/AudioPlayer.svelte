@@ -177,7 +177,7 @@
 	<TrackMetadata {metadata} fileName={currentFileName} isLoading={isLoadingMetadata} />
 
 	<!-- Audio Player -->
-	<div class="w-full rounded-lg border border-gray-700 bg-gray-800 p-6">
+	<div class="w-full rounded-lg border p-6">
 		{#if audioUrl && currentFileName}
 			<div class="flex items-center gap-4">
 				<audio
@@ -191,19 +191,11 @@
 					Your browser does not support the audio element.
 				</audio>
 
-				<button
-					onclick={handleStop}
-					class="rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-800 focus:outline-none"
-					type="button"
-				>
-					Stop
-				</button>
+				<button onclick={handleStop} class="rounded px-4 py-2" type="button"> Stop </button>
 			</div>
 		{:else}
 			<div class="py-4 text-center">
-				<p class="text-sm text-gray-400 italic">
-					No track selected. Click on an MP3 file from the list above to start playing.
-				</p>
+				<p>No track selected. Click on an MP3 file from the list above to start playing.</p>
 			</div>
 		{/if}
 	</div>
