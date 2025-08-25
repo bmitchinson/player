@@ -1,217 +1,175 @@
-interface CachedMetadata {
-	title?: string;
-	album?: string;
-	artist?: string;
-	track?: number;
-	duration?: number;
-	artwork?: string;
-	// Cache metadata
-	cacheKey: string;
-	lastModified: number;
-	fileSize: number;
-	timestamp: number;
+interface CompactMetadata {
+	t?: string; // title
+	a?: string; // artist
+	al?: string; // album
+	tr?: number; // track
+	d?: number; // duration
 }
 
 interface FileIdentifier {
 	path: string;
-	lastModified: number;
 	size: number;
+	lastModified: number;
 }
 
 class MetadataCache {
-	private static readonly CACHE_KEY = 'audio-metadata-cache';
-	private static readonly CACHE_VERSION = '1.0';
+	private static readonly CACHE_KEY = 'audio-cache-v2';
 
 	/**
-	 * Generate a cache key for a file based on its path, size, and last modified date
+	 * Generate a compact hash key for a file
 	 */
-	private static generateCacheKey(identifier: FileIdentifier): string {
-		return `${identifier.path}_${identifier.size}_${identifier.lastModified}`;
+	private static generateKey(identifier: FileIdentifier): string {
+		// Use a simple hash of path + size + lastModified for compactness
+		const str = `${identifier.path}_${identifier.size}_${identifier.lastModified}`;
+		let hash = 0;
+		for (let i = 0; i < str.length; i++) {
+			const char = str.charCodeAt(i);
+			hash = (hash << 5) - hash + char;
+			hash = hash & hash; // Convert to 32bit integer
+		}
+		return hash.toString(36); // Base36 for shorter strings
 	}
 
 	/**
-	 * Get all cached metadata from localStorage
+	 * Get all cached data
 	 */
-	private static getAllCachedData(): Record<string, CachedMetadata> {
+	private static getCacheData(): Record<string, CompactMetadata> {
 		try {
 			const data = localStorage.getItem(this.CACHE_KEY);
-			if (!data) return {};
-
-			const parsed = JSON.parse(data);
-			if (parsed.version !== this.CACHE_VERSION) {
-				// Clear cache if version mismatch
-				this.clearCache();
-				return {};
-			}
-
-			return parsed.metadata || {};
-		} catch (error) {
-			console.warn('Failed to parse metadata cache:', error);
-			this.clearCache();
+			return data ? JSON.parse(data) : {};
+		} catch {
 			return {};
 		}
 	}
 
 	/**
-	 * Save all cached metadata to localStorage
+	 * Save all cached data
 	 */
-	private static saveAllCachedData(data: Record<string, CachedMetadata>): void {
+	private static saveCacheData(data: Record<string, CompactMetadata>): void {
 		try {
-			const cacheObject = {
-				version: this.CACHE_VERSION,
-				metadata: data
-			};
-
-			localStorage.setItem(this.CACHE_KEY, JSON.stringify(cacheObject));
+			localStorage.setItem(this.CACHE_KEY, JSON.stringify(data));
 		} catch (error) {
-			console.warn('Failed to save metadata cache:', error);
+			console.warn('Failed to save cache:', error);
 		}
 	}
 
 	/**
-	 * Check if metadata exists in cache for a given file
+	 * Check if metadata exists in cache
 	 */
 	static has(identifier: FileIdentifier): boolean {
-		const cacheKey = this.generateCacheKey(identifier);
-		const allData = this.getAllCachedData();
-		return cacheKey in allData;
+		const key = this.generateKey(identifier);
+		const cache = this.getCacheData();
+		return key in cache;
 	}
 
 	/**
-	 * Get cached metadata for a file
+	 * Get metadata from cache
 	 */
-	static get(identifier: FileIdentifier): CachedMetadata | null {
-		const cacheKey = this.generateCacheKey(identifier);
-		const allData = this.getAllCachedData();
-		const cached = allData[cacheKey];
-
-		if (!cached) return null;
-
-		return cached;
+	static get(identifier: FileIdentifier): CompactMetadata | null {
+		const key = this.generateKey(identifier);
+		const cache = this.getCacheData();
+		return cache[key] || null;
 	}
 
 	/**
-	 * Store metadata in cache for a file
+	 * Store metadata in cache
 	 */
-	static set(
-		identifier: FileIdentifier,
-		metadata: Omit<CachedMetadata, 'cacheKey' | 'lastModified' | 'fileSize' | 'timestamp'>
-	): void {
-		const cacheKey = this.generateCacheKey(identifier);
-		const allData = this.getAllCachedData();
+	static set(identifier: FileIdentifier, metadata: CompactMetadata): void {
+		const key = this.generateKey(identifier);
+		const cache = this.getCacheData();
+		cache[key] = metadata;
+		this.saveCacheData(cache);
+	}
 
-		// Clean up any existing entry for this file first
-		const existingEntry = allData[cacheKey];
-		if (existingEntry?.artwork) {
-			URL.revokeObjectURL(existingEntry.artwork);
+	/**
+	 * Batch set multiple entries (for performance)
+	 */
+	static setBatch(entries: Array<{ identifier: FileIdentifier; metadata: CompactMetadata }>): void {
+		const cache = this.getCacheData();
+		for (const { identifier, metadata } of entries) {
+			const key = this.generateKey(identifier);
+			cache[key] = metadata;
 		}
-
-		const cachedMetadata: CachedMetadata = {
-			...metadata,
-			cacheKey,
-			lastModified: identifier.lastModified,
-			fileSize: identifier.size,
-			timestamp: Date.now()
-		};
-
-		allData[cacheKey] = cachedMetadata;
-		this.saveAllCachedData(allData);
+		this.saveCacheData(cache);
 	}
 
 	/**
-	 * Delete cached metadata for a file
+	 * Clear all cache
 	 */
-	static delete(identifier: FileIdentifier): void {
-		const cacheKey = this.generateCacheKey(identifier);
-		const allData = this.getAllCachedData();
-
-		const cached = allData[cacheKey];
-		if (cached?.artwork) {
-			URL.revokeObjectURL(cached.artwork);
-		}
-
-		delete allData[cacheKey];
-		this.saveAllCachedData(allData);
-	}
-
-	/**
-	 * Clear all cached metadata
-	 */
-	static clearCache(): void {
+	static clear(): void {
 		try {
-			// Clean up all blob URLs first
-			const allData = this.getAllCachedData();
-			for (const metadata of Object.values(allData)) {
-				if (metadata.artwork) {
-					URL.revokeObjectURL(metadata.artwork);
-				}
-			}
-
 			localStorage.removeItem(this.CACHE_KEY);
 		} catch (error) {
-			console.warn('Failed to clear metadata cache:', error);
+			console.warn('Failed to clear cache:', error);
 		}
 	}
 
 	/**
 	 * Get cache statistics
 	 */
-	static getStats(): { totalEntries: number; cacheSize: string; oldestEntry: number | null } {
-		const allData = this.getAllCachedData();
-		const entries = Object.values(allData);
+	static getStats(): { totalEntries: number; cacheSize: string } {
+		const cache = this.getCacheData();
+		const entries = Object.keys(cache).length;
 
-		let oldestTimestamp: number | null = null;
-		if (entries.length > 0) {
-			oldestTimestamp = Math.min(...entries.map((e) => e.timestamp));
-		}
-
-		// Estimate cache size (rough approximation)
+		// Estimate size
 		const cacheString = localStorage.getItem(this.CACHE_KEY) || '';
 		const sizeInBytes = new Blob([cacheString]).size;
-		const sizeInKB = (sizeInBytes / 1024).toFixed(2);
+		const sizeInKB = (sizeInBytes / 1024).toFixed(1);
 
 		return {
-			totalEntries: entries.length,
-			cacheSize: `${sizeInKB} KB`,
-			oldestEntry: oldestTimestamp
+			totalEntries: entries,
+			cacheSize: `${sizeInKB} KB`
 		};
 	}
 
 	/**
-	 * Get all cached entries for files within a specific folder path
-	 * This enables the recursive functionality where loading a parent folder
-	 * can benefit from cache entries when later loading subfolders
+	 * Create file identifier
 	 */
-	static getCachedEntriesForFolder(folderPath: string): Record<string, CachedMetadata> {
-		const allData = this.getAllCachedData();
-		const folderEntries: Record<string, CachedMetadata> = {};
-
-		for (const [cacheKey, metadata] of Object.entries(allData)) {
-			// Extract the file path from the cache key (remove size and lastModified parts)
-			const pathMatch = cacheKey.match(/^(.+)_\d+_\d+$/);
-			if (pathMatch) {
-				const filePath = pathMatch[1];
-
-				// Check if this file is within the specified folder
-				if (folderPath === '' || filePath.startsWith(folderPath + '/') || filePath === folderPath) {
-					folderEntries[filePath] = metadata;
-				}
-			}
-		}
-
-		return folderEntries;
-	}
-
-	/**
-	 * Create a file identifier from a File object and its path
-	 */
-	static createFileIdentifier(file: File, path: string): FileIdentifier {
+	static createIdentifier(file: File, path: string): FileIdentifier {
 		return {
 			path,
-			lastModified: file.lastModified,
-			size: file.size
+			size: file.size,
+			lastModified: file.lastModified
 		};
+	}
+
+	/**
+	 * Convert to full metadata format
+	 */
+	static expandMetadata(compact: CompactMetadata): {
+		title?: string;
+		artist?: string;
+		album?: string;
+		track?: number;
+		duration?: number;
+	} {
+		return {
+			title: compact.t,
+			artist: compact.a,
+			album: compact.al,
+			track: compact.tr,
+			duration: compact.d
+		};
+	}
+
+	/**
+	 * Convert from full metadata format
+	 */
+	static compactMetadata(metadata: {
+		title?: string;
+		artist?: string;
+		album?: string;
+		track?: number;
+		duration?: number;
+	}): CompactMetadata {
+		const compact: CompactMetadata = {};
+		if (metadata.title) compact.t = metadata.title;
+		if (metadata.artist) compact.a = metadata.artist;
+		if (metadata.album) compact.al = metadata.album;
+		if (metadata.track) compact.tr = metadata.track;
+		if (metadata.duration) compact.d = metadata.duration;
+		return compact;
 	}
 }
 
-export { MetadataCache, type CachedMetadata, type FileIdentifier };
+export { MetadataCache, type FileIdentifier, type CompactMetadata };

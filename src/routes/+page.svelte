@@ -6,24 +6,19 @@
 	let audioUrl = $state<string | null>(null);
 	let currentFileName = $state<string | null>(null);
 	let currentFile = $state<File | null>(null);
-	let currentFilePath = $state<string | null>(null);
-	let trackQueue = $state<{ file: File; fileName: string; filePath: string }[]>([]);
+	let trackQueue = $state<{ file: File; fileName: string }[]>([]);
 	let currentTrackIndex = $state<number>(-1);
 
 	// Functions to get next/previous track from sorted table
-	let getNextTrack = $state<
-		(() => { file: File; fileName: string; filePath: string } | null) | undefined
-	>();
-	let getPreviousTrack = $state<
-		(() => { file: File; fileName: string; filePath: string } | null) | undefined
-	>();
+	let getNextTrack = $state<(() => { file: File; fileName: string } | null) | undefined>();
+	let getPreviousTrack = $state<(() => { file: File; fileName: string } | null) | undefined>();
 
 	// Cache manager state
 	let showCacheManager = $state(false);
 
-	function handleFileSelect(file: File, fileName: string, filePath: string) {
-		// Find the index of this file in the queue using filePath for better uniqueness
-		const trackIndex = trackQueue.findIndex((track) => track.filePath === filePath);
+	function handleFileSelect(file: File, fileName: string) {
+		// Find the index of this file in the queue
+		const trackIndex = trackQueue.findIndex((track) => track.fileName === fileName);
 
 		if (trackIndex !== -1) {
 			currentTrackIndex = trackIndex;
@@ -45,7 +40,6 @@
 		audioUrl = URL.createObjectURL(track.file);
 		currentFileName = track.fileName;
 		currentFile = track.file;
-		currentFilePath = track.filePath;
 		currentTrackIndex = index;
 	}
 
@@ -53,7 +47,7 @@
 		// Try to get next track from sorted table first
 		const nextTrack = getNextTrack?.();
 		if (nextTrack) {
-			handleFileSelect(nextTrack.file, nextTrack.fileName, nextTrack.filePath);
+			handleFileSelect(nextTrack.file, nextTrack.fileName);
 		} else {
 			// Fallback to original queue-based logic if table function not available
 			if (currentTrackIndex < trackQueue.length - 1) {
@@ -66,7 +60,7 @@
 		// Try to get previous track from sorted table first
 		const previousTrack = getPreviousTrack?.();
 		if (previousTrack) {
-			handleFileSelect(previousTrack.file, previousTrack.fileName, previousTrack.filePath);
+			handleFileSelect(previousTrack.file, previousTrack.fileName);
 		} else {
 			// Fallback to original queue-based logic if table function not available
 			if (currentTrackIndex > 0) {
@@ -75,7 +69,7 @@
 		}
 	}
 
-	function updateTrackQueue(files: { file: File; fileName: string; filePath: string }[]) {
+	function updateTrackQueue(files: { file: File; fileName: string }[]) {
 		trackQueue = files;
 	}
 
@@ -89,7 +83,6 @@
 		audioUrl = null;
 		currentFileName = null;
 		currentFile = null;
-		currentFilePath = null;
 		currentTrackIndex = -1;
 	}
 </script>
@@ -135,7 +128,6 @@
 			{audioUrl}
 			{currentFileName}
 			{currentFile}
-			{currentFilePath}
 			onTrackEnd={playNextTrack}
 			onStop={handleStop}
 			onNext={playNextTrack}

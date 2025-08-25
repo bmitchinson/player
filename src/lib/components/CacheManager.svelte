@@ -10,8 +10,7 @@
 
 	let cacheStats = $state({
 		totalEntries: 0,
-		cacheSize: '0 KB',
-		oldestEntry: null as number | null
+		cacheSize: '0 KB'
 	});
 
 	let isClearing = $state(false);
@@ -35,17 +34,12 @@
 		) {
 			isClearing = true;
 			try {
-				MetadataCache.clearCache();
+				MetadataCache.clear();
 				updateCacheStats();
 			} finally {
 				isClearing = false;
 			}
 		}
-	}
-
-	function formatDate(timestamp: number | null): string {
-		if (!timestamp) return 'N/A';
-		return new Date(timestamp).toLocaleDateString();
 	}
 
 	function handleBackdropClick(event: MouseEvent) {
@@ -80,10 +74,6 @@
 							<span>Cache Size:</span>
 							<span>{cacheStats.cacheSize}</span>
 						</div>
-						<div class="flex justify-between">
-							<span>Oldest Entry:</span>
-							<span>{formatDate(cacheStats.oldestEntry)}</span>
-						</div>
 					</div>
 				</div>
 
@@ -92,12 +82,10 @@
 					<h3>How it works</h3>
 					<div>
 						<p class="mb-2">
-							Metadata is cached based on file path, size, and modification date. When you load a
-							folder, all metadata is cached for future use.
+							Metadata is cached using an optimized format that takes ~1KB per 400 songs.
 						</p>
 						<p class="mb-2">
-							If you later load a subfolder, it will use the cached data from when the parent folder
-							was loaded.
+							Cache is checked before extracting metadata to speed up subsequent loads.
 						</p>
 						<p>Cache entries persist until manually cleared.</p>
 					</div>

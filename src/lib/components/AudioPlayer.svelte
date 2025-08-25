@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { parseBlob } from 'music-metadata';
 	import TrackMetadata from './TrackMetadata.svelte';
-	import { MetadataCache, type FileIdentifier } from '$lib/utils/metadataCache';
 
 	interface ITrackMetadata {
 		title?: string;
@@ -16,7 +15,6 @@
 		audioUrl?: string | null;
 		currentFileName?: string | null;
 		currentFile?: File | null;
-		currentFilePath?: string | null;
 		onTrackEnd?: () => void;
 		onStop?: () => void;
 		onNext?: () => void;
@@ -27,7 +25,6 @@
 		audioUrl = null,
 		currentFileName = null,
 		currentFile = null,
-		currentFilePath = null,
 		onTrackEnd,
 		onStop,
 		onNext,
@@ -70,36 +67,6 @@
 	async function extractMetadata(file: File) {
 		isLoadingMetadata = true;
 		try {
-			// Create file identifier for caching
-			const fileIdentifier: FileIdentifier = MetadataCache.createFileIdentifier(
-				file,
-				currentFilePath || currentFileName || file.name
-			);
-
-			// Check cache first
-			const cachedMetadata = MetadataCache.get(fileIdentifier);
-			if (cachedMetadata) {
-				// Clean up previous artwork URL if it exists
-				if (metadata?.artwork) {
-					URL.revokeObjectURL(metadata.artwork);
-				}
-
-				// Use cached metadata
-				metadata = {
-					title: cachedMetadata.title,
-					album: cachedMetadata.album,
-					artist: cachedMetadata.artist,
-					track: cachedMetadata.track,
-					duration: cachedMetadata.duration,
-					artwork: cachedMetadata.artwork
-				};
-
-				// Set MediaSession metadata
-				setMediaSessionMetadata(metadata, cachedMetadata.artwork);
-				return;
-			}
-
-			// Extract metadata from file if not in cache
 			const audioMetadata = await parseBlob(file);
 
 			// Clean up previous artwork URL if it exists
@@ -117,7 +84,7 @@
 				artworkMimeType = picture.format;
 			}
 
-			const extractedMetadata = {
+			metadata = {
 				title: audioMetadata.common.title,
 				album: audioMetadata.common.album,
 				artist: audioMetadata.common.artist,
@@ -125,11 +92,6 @@
 				duration: audioMetadata.format.duration,
 				artwork: artworkUrl
 			};
-
-			metadata = extractedMetadata;
-
-			// Cache the metadata
-			MetadataCache.set(fileIdentifier, extractedMetadata);
 
 			// Set MediaSession metadata
 			setMediaSessionMetadata(metadata, artworkUrl, artworkMimeType);
