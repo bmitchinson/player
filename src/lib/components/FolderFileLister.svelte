@@ -17,11 +17,11 @@
 	}
 
 	interface FolderFileListerProps {
-		onFileSelect?: (file: File, fileName: string) => void;
-		onTrackQueueUpdate?: (tracks: { file: File; fileName: string }[]) => void;
+		onFileSelect?: (file: File, fileName: string, filePath: string) => void;
+		onTrackQueueUpdate?: (tracks: { file: File; fileName: string; filePath: string }[]) => void;
 		currentFileName?: string | null;
-		getNextTrack?: () => { file: File; fileName: string } | null;
-		getPreviousTrack?: () => { file: File; fileName: string } | null;
+		getNextTrack?: () => { file: File; fileName: string; filePath: string } | null;
+		getPreviousTrack?: () => { file: File; fileName: string; filePath: string } | null;
 	}
 
 	let {
@@ -37,7 +37,7 @@
 	let isLoading = $state(false);
 	let error = $state<string | null>(null);
 	let directoryHandle: FileSystemDirectoryHandle | null = null;
-	let tracks: { file: File; fileName: string }[] = $state([]);
+	let tracks: { file: File; fileName: string; filePath: string }[] = $state([]);
 	let selectedFolder = $state<string | null>(null);
 
 	async function* getFilesRecursively(
@@ -122,8 +122,8 @@
 		}
 	}
 
-	function handleTrackSelect(file: File, fileName: string) {
-		onFileSelect?.(file, fileName);
+	function handleTrackSelect(file: File, fileName: string, filePath: string) {
+		onFileSelect?.(file, fileName, filePath);
 	}
 
 	function extractFolders() {
@@ -172,7 +172,7 @@
 	}
 
 	async function updateTrackQueueForFolder(folderPath: string) {
-		const trackList: { file: File; fileName: string }[] = [];
+		const trackList: { file: File; fileName: string; filePath: string }[] = [];
 
 		try {
 			for (const item of fileList) {
@@ -186,7 +186,7 @@
 					) {
 						const file = await item.fileHandle.getFile();
 						const fileName = item.path.split('/').pop() || file.name;
-						trackList.push({ file, fileName });
+						trackList.push({ file, fileName, filePath: item.path });
 					}
 				}
 			}
@@ -198,9 +198,11 @@
 	}
 
 	// Bindable functions to get next/previous track from table
-	let getNextTrackFromTable = $state<(() => { file: File; fileName: string } | null) | undefined>();
+	let getNextTrackFromTable = $state<
+		(() => { file: File; fileName: string; filePath: string } | null) | undefined
+	>();
 	let getPreviousTrackFromTable = $state<
-		(() => { file: File; fileName: string } | null) | undefined
+		(() => { file: File; fileName: string; filePath: string } | null) | undefined
 	>();
 
 	$effect(() => {

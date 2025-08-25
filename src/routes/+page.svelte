@@ -1,20 +1,29 @@
 <script lang="ts">
 	import FolderFileLister from '$lib/components/FolderFileLister.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
+	import CacheManager from '$lib/components/CacheManager.svelte';
 
 	let audioUrl = $state<string | null>(null);
 	let currentFileName = $state<string | null>(null);
 	let currentFile = $state<File | null>(null);
-	let trackQueue = $state<{ file: File; fileName: string }[]>([]);
+	let currentFilePath = $state<string | null>(null);
+	let trackQueue = $state<{ file: File; fileName: string; filePath: string }[]>([]);
 	let currentTrackIndex = $state<number>(-1);
 
 	// Functions to get next/previous track from sorted table
-	let getNextTrack = $state<(() => { file: File; fileName: string } | null) | undefined>();
-	let getPreviousTrack = $state<(() => { file: File; fileName: string } | null) | undefined>();
+	let getNextTrack = $state<
+		(() => { file: File; fileName: string; filePath: string } | null) | undefined
+	>();
+	let getPreviousTrack = $state<
+		(() => { file: File; fileName: string; filePath: string } | null) | undefined
+	>();
 
-	function handleFileSelect(file: File, fileName: string) {
-		// Find the index of this file in the queue
-		const trackIndex = trackQueue.findIndex((track) => track.fileName === fileName);
+	// Cache manager state
+	let showCacheManager = $state(false);
+
+	function handleFileSelect(file: File, fileName: string, filePath: string) {
+		// Find the index of this file in the queue using filePath for better uniqueness
+		const trackIndex = trackQueue.findIndex((track) => track.filePath === filePath);
 
 		if (trackIndex !== -1) {
 			currentTrackIndex = trackIndex;
@@ -36,6 +45,7 @@
 		audioUrl = URL.createObjectURL(track.file);
 		currentFileName = track.fileName;
 		currentFile = track.file;
+		currentFilePath = track.filePath;
 		currentTrackIndex = index;
 	}
 
@@ -43,7 +53,7 @@
 		// Try to get next track from sorted table first
 		const nextTrack = getNextTrack?.();
 		if (nextTrack) {
-			handleFileSelect(nextTrack.file, nextTrack.fileName);
+			handleFileSelect(nextTrack.file, nextTrack.fileName, nextTrack.filePath);
 		} else {
 			// Fallback to original queue-based logic if table function not available
 			if (currentTrackIndex < trackQueue.length - 1) {
@@ -56,7 +66,7 @@
 		// Try to get previous track from sorted table first
 		const previousTrack = getPreviousTrack?.();
 		if (previousTrack) {
-			handleFileSelect(previousTrack.file, previousTrack.fileName);
+			handleFileSelect(previousTrack.file, previousTrack.fileName, previousTrack.filePath);
 		} else {
 			// Fallback to original queue-based logic if table function not available
 			if (currentTrackIndex > 0) {
@@ -65,7 +75,7 @@
 		}
 	}
 
-	function updateTrackQueue(files: { file: File; fileName: string }[]) {
+	function updateTrackQueue(files: { file: File; fileName: string; filePath: string }[]) {
 		trackQueue = files;
 	}
 
@@ -79,6 +89,7 @@
 		audioUrl = null;
 		currentFileName = null;
 		currentFile = null;
+		currentFilePath = null;
 		currentTrackIndex = -1;
 	}
 </script>
@@ -90,8 +101,23 @@
 
 <main class="w-full max-w-3xl space-y-6">
 	<div class="space-y-2 text-center">
-		<h1>Local Media Player</h1>
-		<p>Select a folder containing MP3 files to browse and play your music.</p>
+		<div class="flex items-center justify-between">
+			<div></div>
+			<div>
+				<h1>Local Media Player</h1>
+				<p>Select a folder containing MP3 files to browse and play your music.</p>
+			</div>
+			<div>
+				<button
+					onclick={() => (showCacheManager = true)}
+					class="rounded border px-3 py-1"
+					type="button"
+					title="Cache Management"
+				>
+					⚙️ Cache
+				</button>
+			</div>
+		</div>
 	</div>
 
 	<div class="w-full">
@@ -109,10 +135,14 @@
 			{audioUrl}
 			{currentFileName}
 			{currentFile}
+			{currentFilePath}
 			onTrackEnd={playNextTrack}
 			onStop={handleStop}
 			onNext={playNextTrack}
 			onPrevious={playPreviousTrack}
 		/>
 	</div>
+
+	<!-- Cache Manager Modal -->
+	<CacheManager isOpen={showCacheManager} onClose={() => (showCacheManager = false)} />
 </main>

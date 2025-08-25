@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { parseBlob } from 'music-metadata';
 	import TrackMetadata from './TrackMetadata.svelte';
+	import { MetadataCache, type FileIdentifier } from '$lib/utils/metadataCache';
 
 	interface ITrackMetadata {
 		title?: string;
@@ -15,6 +16,7 @@
 		audioUrl?: string | null;
 		currentFileName?: string | null;
 		currentFile?: File | null;
+		currentFilePath?: string | null;
 		onTrackEnd?: () => void;
 		onStop?: () => void;
 		onNext?: () => void;
@@ -25,6 +27,7 @@
 		audioUrl = null,
 		currentFileName = null,
 		currentFile = null,
+		currentFilePath = null,
 		onTrackEnd,
 		onStop,
 		onNext,
@@ -67,6 +70,36 @@
 	async function extractMetadata(file: File) {
 		isLoadingMetadata = true;
 		try {
+			// Create file identifier for caching
+			const fileIdentifier: FileIdentifier = MetadataCache.createFileIdentifier(
+				file,
+				currentFilePath || currentFileName || file.name
+			);
+
+			// Check cache first
+			const cachedMetadata = MetadataCache.get(fileIdentifier);
+			if (cachedMetadata) {
+				// Clean up previous artwork URL if it exists
+				if (metadata?.artwork) {
+					URL.revokeObjectURL(metadata.artwork);
+				}
+
+				// Use cached metadata
+				metadata = {
+					title: cachedMetadata.title,
+					album: cachedMetadata.album,
+					artist: cachedMetadata.artist,
+					track: cachedMetadata.track,
+					duration: cachedMetadata.duration,
+					artwork: cachedMetadata.artwork
+				};
+
+				// Set MediaSession metadata
+				setMediaSessionMetadata(metadata, cachedMetadata.artwork);
+				return;
+			}
+
+			// Extract metadata from file if not in cache
 			const audioMetadata = await parseBlob(file);
 
 			// Clean up previous artwork URL if it exists
@@ -84,7 +117,7 @@
 				artworkMimeType = picture.format;
 			}
 
-			metadata = {
+			const extractedMetadata = {
 				title: audioMetadata.common.title,
 				album: audioMetadata.common.album,
 				artist: audioMetadata.common.artist,
@@ -93,52 +126,13 @@
 				artwork: artworkUrl
 			};
 
-			// Set MediaSession metadata if supported
-			if ('mediaSession' in navigator) {
-				const mediaMetadata: any = {
-					title: metadata.title || currentFileName || 'Unknown Track',
-					artist: metadata.artist || '',
-					album: metadata.album || ''
-				};
+			metadata = extractedMetadata;
 
-				// Add artwork if available
-				if (artworkUrl && artworkMimeType) {
-					mediaMetadata.artwork = [
-						{
-							src: artworkUrl,
-							type: artworkMimeType,
-							sizes: '512x512'
-						}
-					];
-				}
+			// Cache the metadata
+			MetadataCache.set(fileIdentifier, extractedMetadata);
 
-				navigator.mediaSession.metadata = new MediaMetadata(mediaMetadata);
-
-				// Set up action handlers
-				navigator.mediaSession.setActionHandler('play', () => {
-					audioElement?.play();
-				});
-				navigator.mediaSession.setActionHandler('pause', () => {
-					audioElement?.pause();
-				});
-				navigator.mediaSession.setActionHandler('stop', () => {
-					handleStop();
-				});
-
-				// Enable next track if callback provided
-				if (onNext) {
-					navigator.mediaSession.setActionHandler('nexttrack', () => {
-						onNext();
-					});
-				}
-
-				// Enable previous track if callback provided
-				if (onPrevious) {
-					navigator.mediaSession.setActionHandler('previoustrack', () => {
-						onPrevious();
-					});
-				}
-			}
+			// Set MediaSession metadata
+			setMediaSessionMetadata(metadata, artworkUrl, artworkMimeType);
 		} catch (error) {
 			console.warn('Failed to extract metadata:', error);
 			metadata = null;
@@ -148,6 +142,59 @@
 			}
 		} finally {
 			isLoadingMetadata = false;
+		}
+	}
+
+	function setMediaSessionMetadata(
+		metadata: ITrackMetadata,
+		artworkUrl?: string,
+		artworkMimeType?: string
+	) {
+		// Set MediaSession metadata if supported
+		if ('mediaSession' in navigator) {
+			const mediaMetadata: MediaMetadataInit = {
+				title: metadata.title || currentFileName || 'Unknown Track',
+				artist: metadata.artist || '',
+				album: metadata.album || ''
+			};
+
+			// Add artwork if available
+			if (artworkUrl && artworkMimeType) {
+				mediaMetadata.artwork = [
+					{
+						src: artworkUrl,
+						type: artworkMimeType,
+						sizes: '512x512'
+					}
+				];
+			}
+
+			navigator.mediaSession.metadata = new MediaMetadata(mediaMetadata);
+
+			// Set up action handlers
+			navigator.mediaSession.setActionHandler('play', () => {
+				audioElement?.play();
+			});
+			navigator.mediaSession.setActionHandler('pause', () => {
+				audioElement?.pause();
+			});
+			navigator.mediaSession.setActionHandler('stop', () => {
+				handleStop();
+			});
+
+			// Enable next track if callback provided
+			if (onNext) {
+				navigator.mediaSession.setActionHandler('nexttrack', () => {
+					onNext();
+				});
+			}
+
+			// Enable previous track if callback provided
+			if (onPrevious) {
+				navigator.mediaSession.setActionHandler('previoustrack', () => {
+					onPrevious();
+				});
+			}
 		}
 	}
 

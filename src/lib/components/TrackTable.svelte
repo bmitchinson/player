@@ -1,9 +1,11 @@
 <script lang="ts">
 	import { parseBlob } from 'music-metadata';
+	import { MetadataCache, type FileIdentifier } from '$lib/utils/metadataCache';
 
 	interface TrackData {
 		file: File;
 		fileName: string;
+		filePath: string;
 		title?: string;
 		artist?: string;
 		album?: string;
@@ -14,11 +16,11 @@
 	}
 
 	interface TrackTableProps {
-		tracks: { file: File; fileName: string }[];
-		onTrackSelect?: (file: File, fileName: string) => void;
+		tracks: { file: File; fileName: string; filePath: string }[];
+		onTrackSelect?: (file: File, fileName: string, filePath: string) => void;
 		currentFileName?: string | null;
-		getNextTrack?: () => { file: File; fileName: string } | null;
-		getPreviousTrack?: () => { file: File; fileName: string } | null;
+		getNextTrack?: () => { file: File; fileName: string; filePath: string } | null;
+		getPreviousTrack?: () => { file: File; fileName: string; filePath: string } | null;
 	}
 
 	let {
@@ -53,23 +55,58 @@
 		trackData = tracks.map((track) => ({
 			file: track.file,
 			fileName: track.fileName,
+			filePath: track.filePath,
 			isLoading: true
 		}));
 
 		// Extract metadata for each track
 		for (let i = 0; i < tracks.length; i++) {
 			try {
-				const metadata = await parseBlob(tracks[i].file);
-				trackData[i] = {
-					...trackData[i],
-					title: metadata.common.title || tracks[i].fileName.replace('.mp3', ''),
-					artist: metadata.common.artist,
-					album: metadata.common.album,
-					track: metadata.common.track?.no || undefined,
-					duration: metadata.format.duration,
-					isLoading: false
-				};
-			} catch (error) {
+				const track = tracks[i];
+				const fileIdentifier: FileIdentifier = MetadataCache.createFileIdentifier(
+					track.file,
+					track.filePath
+				);
+
+				// Check cache first
+				const cachedMetadata = MetadataCache.get(fileIdentifier);
+				if (cachedMetadata) {
+					// Use cached metadata
+					trackData[i] = {
+						...trackData[i],
+						title: cachedMetadata.title || track.fileName.replace('.mp3', ''),
+						artist: cachedMetadata.artist,
+						album: cachedMetadata.album,
+						track: cachedMetadata.track,
+						duration: cachedMetadata.duration,
+						isLoading: false
+					};
+				} else {
+					// Extract metadata from file if not in cache
+					const metadata = await parseBlob(track.file);
+
+					const extractedMetadata = {
+						title: metadata.common.title,
+						artist: metadata.common.artist,
+						album: metadata.common.album,
+						track: metadata.common.track?.no || undefined,
+						duration: metadata.format.duration
+					};
+
+					// Cache the metadata (without artwork for table view)
+					MetadataCache.set(fileIdentifier, extractedMetadata);
+
+					trackData[i] = {
+						...trackData[i],
+						title: extractedMetadata.title || track.fileName.replace('.mp3', ''),
+						artist: extractedMetadata.artist,
+						album: extractedMetadata.album,
+						track: extractedMetadata.track,
+						duration: extractedMetadata.duration,
+						isLoading: false
+					};
+				}
+			} catch {
 				trackData[i] = {
 					...trackData[i],
 					title: tracks[i].fileName.replace('.mp3', ''),
@@ -133,10 +170,10 @@
 	}
 
 	function handleTrackClick(track: TrackData) {
-		onTrackSelect?.(track.file, track.fileName);
+		onTrackSelect?.(track.file, track.fileName, track.filePath);
 	}
 
-	function getNextTrackInSequence(): { file: File; fileName: string } | null {
+	function getNextTrackInSequence(): { file: File; fileName: string; filePath: string } | null {
 		const sortedTracks = getSortedTracks();
 		const currentIndex = sortedTracks.findIndex((track) => track.fileName === currentFileName);
 
@@ -145,10 +182,10 @@
 		}
 
 		const nextTrack = sortedTracks[currentIndex + 1];
-		return { file: nextTrack.file, fileName: nextTrack.fileName };
+		return { file: nextTrack.file, fileName: nextTrack.fileName, filePath: nextTrack.filePath };
 	}
 
-	function getPreviousTrackInSequence(): { file: File; fileName: string } | null {
+	function getPreviousTrackInSequence(): { file: File; fileName: string; filePath: string } | null {
 		const sortedTracks = getSortedTracks();
 		const currentIndex = sortedTracks.findIndex((track) => track.fileName === currentFileName);
 
@@ -157,7 +194,11 @@
 		}
 
 		const previousTrack = sortedTracks[currentIndex - 1];
-		return { file: previousTrack.file, fileName: previousTrack.fileName };
+		return {
+			file: previousTrack.file,
+			fileName: previousTrack.fileName,
+			filePath: previousTrack.filePath
+		};
 	}
 
 	function getSortIcon(column: 'track' | 'title' | 'artist' | 'duration'): string {
