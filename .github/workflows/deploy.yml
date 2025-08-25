@@ -32,6 +32,8 @@ jobs:
 
       - name: Build (bun run build)
         run: bun run build
+        env:
+          PUBLIC_COMMIT_SHA: ${{ github.sha }}
 
       - name: Create .nojekyll
         run: touch build/.nojekyll

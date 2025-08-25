@@ -2,6 +2,7 @@
 	import FolderFileLister from '$lib/components/FolderFileLister.svelte';
 	import AudioPlayer from '$lib/components/AudioPlayer.svelte';
 	import CacheManager from '$lib/components/CacheManager.svelte';
+	import { version } from '$lib/utils/version';
 
 	let audioUrl = $state<string | null>(null);
 	let currentFileName = $state<string | null>(null);
@@ -137,4 +138,18 @@
 
 	<!-- Cache Manager Modal -->
 	<CacheManager isOpen={showCacheManager} onClose={() => (showCacheManager = false)} />
+
+	<!-- Version Footer -->
+	<footer class="mt-8 border-t pt-4 text-center text-sm text-gray-500">
+		<p>
+			<a
+				href={version.repositoryUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="hover:underline"
+			>
+				Version: {version.shortSha}
+			</a>
+		</p>
+	</footer>
 </main>

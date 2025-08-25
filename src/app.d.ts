@@ -9,6 +9,11 @@ declare global {
 		// interface Platform {}
 	}
 
+	// Environment variables
+	interface ImportMetaEnv {
+		readonly PUBLIC_COMMIT_SHA: string;
+	}
+
 	// File System Access API types
 	interface FileSystemHandle {
 		kind: 'file' | 'directory';
