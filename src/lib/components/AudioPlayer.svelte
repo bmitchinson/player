@@ -34,6 +34,7 @@
 	let audioElement = $state<HTMLAudioElement | undefined>();
 	let metadata = $state<ITrackMetadata | null>(null);
 	let isLoadingMetadata = $state(false);
+	let repeatSong = $state(false);
 
 	// Extract metadata when a new file is loaded
 	$effect(() => {
@@ -161,7 +162,14 @@
 	}
 
 	function handleTrackEnd() {
-		onTrackEnd?.();
+		if (repeatSong && audioElement) {
+			audioElement.currentTime = 0;
+			audioElement.play().catch((error) => {
+				console.warn('Repeat play failed:', error);
+			});
+		} else {
+			onTrackEnd?.();
+		}
 	}
 
 	function handleStop() {
@@ -188,19 +196,26 @@
 	<!-- Audio Player -->
 	<div class="w-full rounded-lg border p-6">
 		{#if audioUrl && currentFileName}
-			<div class="flex items-center gap-4">
-				<audio
-					bind:this={audioElement}
-					src={audioUrl}
-					controls
-					preload="metadata"
-					class="flex-1"
-					onended={handleTrackEnd}
-				>
-					Your browser does not support the audio element.
-				</audio>
+			<div class="space-y-4">
+				<div class="flex items-center gap-4">
+					<audio
+						bind:this={audioElement}
+						src={audioUrl}
+						controls
+						preload="metadata"
+						class="flex-1"
+						onended={handleTrackEnd}
+					>
+						Your browser does not support the audio element.
+					</audio>
 
-				<button onclick={handleStop} class="rounded px-4 py-2" type="button"> Stop </button>
+					<button onclick={handleStop} class="rounded px-4 py-2" type="button"> Stop </button>
+				</div>
+
+				<div class="flex items-center gap-2">
+					<input type="checkbox" id="repeat-song" bind:checked={repeatSong} class="h-4 w-4" />
+					<label for="repeat-song" class="text-sm">Repeat Song</label>
+				</div>
 			</div>
 		{:else}
 			<div class="py-4 text-center">
