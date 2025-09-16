@@ -104,7 +104,7 @@
 			<div>
 				<button
 					onclick={() => (showCacheManager = true)}
-					class="rounded border px-3 py-1"
+					class="border-theme rounded border px-3 py-1"
 					type="button"
 					title="Cache Management"
 				>
@@ -140,7 +140,7 @@
 	<CacheManager isOpen={showCacheManager} onClose={() => (showCacheManager = false)} />
 
 	<!-- Version Footer -->
-	<footer class="mt-8 border-t pt-4 text-center text-sm text-gray-500">
+	<footer class="border-theme mt-8 border-t pt-4 text-center text-sm text-gray-500">
 		<p>
 			<a
 				href={version.repositoryUrl}

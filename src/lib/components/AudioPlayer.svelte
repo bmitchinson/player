@@ -194,7 +194,7 @@
 	<TrackMetadata {metadata} fileName={currentFileName} isLoading={isLoadingMetadata} />
 
 	<!-- Audio Player -->
-	<div class="w-full rounded-lg border p-6">
+	<div class="border-theme w-full rounded-lg border p-6">
 		{#if audioUrl && currentFileName}
 			<div class="space-y-4">
 				<div class="flex items-center gap-4">

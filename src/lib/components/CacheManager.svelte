@@ -55,10 +55,10 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="fixed inset-0 z-50 flex items-center justify-center" onclick={handleBackdropClick}>
 		<!-- Modal content -->
-		<div class="w-full max-w-md rounded border bg-white p-6">
+		<div class="border-theme w-full max-w-md rounded border bg-white p-6">
 			<div class="mb-4 flex items-center justify-between">
 				<h2>Cache Management</h2>
-				<button onclick={onClose} class="rounded border p-1" type="button"> ✕ </button>
+				<button onclick={onClose} class="border-theme rounded border p-1" type="button"> ✕ </button>
 			</div>
 
 			<div class="space-y-4">
@@ -93,13 +93,17 @@
 
 				<!-- Actions -->
 				<div class="flex gap-2">
-					<button onclick={updateCacheStats} class="flex-1 rounded border px-4 py-2" type="button">
+					<button
+						onclick={updateCacheStats}
+						class="border-theme flex-1 rounded border px-4 py-2"
+						type="button"
+					>
 						Refresh Stats
 					</button>
 					<button
 						onclick={clearCache}
 						disabled={isClearing || cacheStats.totalEntries === 0}
-						class="flex-1 rounded border px-4 py-2 disabled:opacity-50"
+						class="border-theme flex-1 rounded border px-4 py-2 disabled:opacity-50"
 						type="button"
 					>
 						{isClearing ? 'Clearing...' : 'Clear Cache'}

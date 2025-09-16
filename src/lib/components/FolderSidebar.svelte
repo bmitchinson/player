@@ -24,8 +24,8 @@
 	}
 </script>
 
-<div class="flex h-full w-full flex-col rounded-lg border">
-	<div class="border-b p-3">
+<div class="border-theme flex h-full w-full flex-col rounded-lg border">
+	<div class="border-theme border-b p-3">
 		<h3 class="uppercase">Folders</h3>
 	</div>
 
@@ -38,7 +38,7 @@
 			{#each folders as folder (folder.path)}
 				<button
 					class="flex w-full items-center gap-2 py-2 pr-3 text-left {selectedFolder === folder.path
-						? 'border-r-2'
+						? 'border-theme border-r-2'
 						: ''}"
 					style="padding-left: {folder.depth * 12 + 12}px"
 					onclick={() => handleFolderClick(folder)}

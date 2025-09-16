@@ -221,7 +221,7 @@
 	</div>
 
 	{#if error}
-		<div class="rounded-lg border p-4 text-center">
+		<div class="border-theme rounded-lg border p-4 text-center">
 			<p>Error: {error}</p>
 		</div>
 	{/if}

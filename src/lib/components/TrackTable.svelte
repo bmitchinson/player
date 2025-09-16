@@ -221,9 +221,9 @@
 			<p>No tracks loaded. Select a folder to see tracks.</p>
 		</div>
 	{:else}
-		<div class="flex-1 overflow-auto rounded-lg border">
+		<div class="border-theme flex-1 overflow-auto rounded-lg border">
 			<table class="w-full">
-				<thead class="border-b">
+				<thead class="border-theme border-b">
 					<tr>
 						<th class="w-16 px-2 py-3 text-center sm:px-4">
 							<button
@@ -272,7 +272,9 @@
 				<tbody class="divide-y">
 					{#each getSortedTracks() as track (track.fileName)}
 						<tr
-							class="cursor-pointer {currentFileName === track.fileName ? 'border-l-4' : ''}"
+							class="cursor-pointer {currentFileName === track.fileName
+								? 'border-theme border-l-4'
+								: ''}"
 							onclick={() => handleTrackClick(track)}
 						>
 							<td class="w-16 px-2 py-3 text-center sm:px-4">
@@ -290,7 +292,7 @@
 								{#if track.isLoading}
 									<div class="flex items-center gap-2">
 										<div
-											class="h-3 w-3 animate-spin rounded-full border-2 border-t-transparent sm:h-4 sm:w-4"
+											class="border-theme h-3 w-3 animate-spin rounded-full border-2 border-t-transparent sm:h-4 sm:w-4"
 										></div>
 										<div class="animate-pulse">
 											<div class="h-4 w-24 rounded sm:w-32"></div>
@@ -347,7 +349,9 @@
 			</div>
 			{#if trackData.some((track) => track.isLoading)}
 				<div class="flex items-center gap-2">
-					<div class="h-3 w-3 animate-spin rounded-full border-2 border-t-transparent"></div>
+					<div
+						class="border-theme h-3 w-3 animate-spin rounded-full border-2 border-t-transparent"
+					></div>
 					<span>Loading metadata...</span>
 				</div>
 			{/if}

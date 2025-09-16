@@ -30,7 +30,7 @@
 	}
 </script>
 
-<div class="w-full rounded-lg border p-4">
+<div class="border-theme w-full rounded-lg border p-4">
 	<div class="space-y-3">
 		<div class="text-center">
 			<h3 class="uppercase">Now Playing</h3>
@@ -86,7 +86,7 @@
 						<dd class="break-words">{metadata?.track || '—'}</dd>
 					</div>
 
-					<div class="flex items-center justify-between border-t pt-2">
+					<div class="border-theme flex items-center justify-between border-t pt-2">
 						<div>
 							<dt class="uppercase">Length</dt>
 							<dd>{formatDuration(metadata?.duration)}</dd>
